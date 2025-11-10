@@ -1,2 +1,15 @@
-app/__pycache__
-.venv
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+*/venv/
+*/.venv/
+
+# IDE / editor settings
+.vscode/
+.idea/
+.env/
