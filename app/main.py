@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import Base, engine
-from .routers import jobs, employers, auth
+from .routers import jobs, employers, auth, candidates
 
 
 app = FastAPI()
@@ -20,10 +20,12 @@ app.add_middleware(
 app.include_router(jobs.router)
 app.include_router(employers.router)
 app.include_router(auth.router)
+app.include_router(candidates.router)
+
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.drop_all(bind=engine)
+    # Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 @app.get("/")

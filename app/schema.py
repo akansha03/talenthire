@@ -14,39 +14,80 @@ class User(BaseModel):
     email: EmailStr
     password: str
 
-class Employer(User):
-    org_name: str
+class EmployerBase(BaseModel):   
+    org_name: str 
     actively_hiring: bool = True
 
-class EmployerCreate(Employer):
+class EmployerCreate(EmployerBase, User):
+    """Used for registration (requires email + password) """
     pass
-   
-class EmployerOut(Employer):
+
+class EmployerOut(EmployerBase):
     id: int
-    org_name: str
     email: EmailStr
-    actively_hiring: bool
     created_at: datetime
 
     class Config:
-        orm_mode = True
-    
+        from_attributes = True
+
 class Job(BaseModel):
     job_title: str
     job_description: str
     experience_start: int
     experience_end: int
     job_location: str
-
-class JobCreate(Job):
-    pass
+    salary_lower_range: Optional[int] = None
+    salary_upper_range: Optional[int] = None 
 
 class JobOut(Job):
     id : int
     created_at: datetime
+    employer: EmployerOut
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+#------------CANDIDATE----------
+
+class CandidateBase(BaseModel):
+    name: str
+    designation: str
+    years_of_exp: int
+
+class CandidateCreate(User, CandidateBase):
+    """Used for registration"""
+    pass
+
+class CandidateUpdate(CandidateBase):
+    """Used for profile updates"""
+    name: str
+    designation: str
+    years_of_exp: int
+
+class CandidateOut(CandidateBase):
+    id: int
+    email: EmailStr
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class JobApplicationOut(BaseModel):
+    id: int
+    job: JobOut
+    candidate: CandidateOut
+
+    class Config:
+        from_attributes = True
+
+class JobApplicateCreate(BaseModel):
+    candidate_id: int
+    
+
+
+
+
+
 
 
 

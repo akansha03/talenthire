@@ -21,7 +21,7 @@ def create_an_employer(employer: schema.EmployerCreate, db: Session = Depends(ge
     return new_employer
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schema.EmployerOut)
-def get_an_employer(id: int, db: Session = Depends(get_db)):
+def get_an_employer(id: int, db: Session = Depends(get_db), current_user = Depends(oauth2.get_current_user)):
     employer = db.query(models.Employer).filter(models.Employer.id == id).first()
     if not employer:
         raise HTTPException(status_code=status.HTTP_200_OK, detail="Employer with id : {id} doesn't exist")
@@ -36,7 +36,8 @@ def get_all_employers(db: Session = Depends(get_db), limit: int=10, skip: int=0,
     return employers
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_an_employer(id: int, db: Session = Depends(get_db)):
+def delete_an_employer(id: int, db: Session = Depends(get_db), current_user = Depends(oauth2.get_current_user)):
+
     query_employer = db.query(models.Employer).filter(models.Employer.id == id)
     if not query_employer.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Employer with id : {id} was not found')
