@@ -10,6 +10,18 @@ router = APIRouter(prefix="/employers", tags = ["Employers"])
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=schema.EmployerOut)
 def create_an_employer(employer: schema.EmployerCreate, db: Session = Depends(get_db)):
 
+    # Check if there is an existing employer - then don't create a new one
+    duplicate_entry = db.query(models.Employer).filter(models.Employer.email == employer.email).first()
+    if duplicate_entry:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Employer already exists")
+    
+    '''
+    Update in schema to check if the password is empty or not
+    
+    if not employer.password or not employer.password.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Password Cannot be empty')
+    '''
+
     # First hash the password
     encrypted_pass = oauth2.get_password_hash(employer.password)
     employer.password = encrypted_pass
@@ -21,7 +33,7 @@ def create_an_employer(employer: schema.EmployerCreate, db: Session = Depends(ge
     return new_employer
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schema.EmployerOut)
-def get_an_employer(id: int, db: Session = Depends(get_db), current_user = Depends(oauth2.get_current_user)):
+def get_an_employer(id: int, db: Session = Depends(get_db)):
     employer = db.query(models.Employer).filter(models.Employer.id == id).first()
     if not employer:
         raise HTTPException(status_code=status.HTTP_200_OK, detail="Employer with id : {id} doesn't exist")
@@ -38,6 +50,8 @@ def get_all_employers(db: Session = Depends(get_db), limit: int=10, skip: int=0,
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_an_employer(id: int, db: Session = Depends(get_db), current_user = Depends(oauth2.get_current_user)):
 
+    if not isinstance(current_user, models.Employer):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
     query_employer = db.query(models.Employer).filter(models.Employer.id == id)
     if not query_employer.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Employer with id : {id} was not found')
