@@ -1,6 +1,8 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from .. import models, schema, oauth2, database
 from sqlalchemy.orm import Session
+from typing import List
+from sqlalchemy import func
 
 router = APIRouter(prefix="/candidates/me", tags=["Candidates"])
 
@@ -22,6 +24,10 @@ def create_a_candidate_profile(candidate: schema.CandidateCreate, db: Session = 
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=schema.CandidateOut)
 def get_candidate_details(db : Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    
+    if not isinstance(current_user, models.Candidate):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+    
     candidate = db.query(models.Candidate).filter(models.Candidate.id == current_user.id).first()
     if candidate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Candidate doesn't exist")
@@ -29,6 +35,10 @@ def get_candidate_details(db : Session = Depends(database.get_db), current_user:
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 def delete_a_candidate(db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    
+    if not isinstance(current_user, models.Candidate):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+    
     candidate = db.query(models.Candidate).filter(models.Candidate.id == current_user.id)
     if candidate.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate is not found")
@@ -37,6 +47,10 @@ def delete_a_candidate(db: Session = Depends(database.get_db), current_user: int
 
 @router.put("", status_code=status.HTTP_200_OK, response_model=schema.CandidateOut)
 def update_a_candidate(candidate: schema.CandidateUpdate, db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    
+    if not isinstance(current_user, models.Candidate):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+    
     update_candidate = db.query(models.Candidate).filter(models.Candidate.id == current_user.id)
 
     existing_candidate = update_candidate.first()
@@ -49,5 +63,9 @@ def update_a_candidate(candidate: schema.CandidateUpdate, db: Session = Depends(
     db.refresh(existing_candidate)
     return existing_candidate
 
-
-
+@router.get("/my-applications", status_code=status.HTTP_200_OK, response_model=List[schema.JobApplicationWithDetails])
+def get_my_applications(db: Session = Depends(database.get_db), current_user: int = Depends(oauth2.get_current_user)):
+    if not isinstance(current_user, models.Candidate):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+    applications = db.query(models.CandidateJobApplication).filter(models.CandidateJobApplication.candidate_id == current_user.id).all()
+    return applications

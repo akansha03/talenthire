@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
 
@@ -12,7 +12,7 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length = 1)
 
 class EmployerBase(BaseModel):   
     org_name: str 
@@ -74,16 +74,29 @@ class CandidateOut(CandidateBase):
 
 class JobApplicationOut(BaseModel):
     id: int
-    job: JobOut
+    job_id: int
     candidate: CandidateOut
+    applied_at: datetime
+
+    class Config:
+        from_attributes = True
+    
+class JobApplicationWithDetails(BaseModel):
+    id: int
+    job_id: int
+    applied_at: datetime
+    job: JobOut
 
     class Config:
         from_attributes = True
 
-class JobApplicateCreate(BaseModel):
-    candidate_id: int
-    
+class JobApplicants(BaseModel):
+    id: int 
+    applied_at: datetime
+    candidate: CandidateOut
 
+    class Config:
+        from_attributes = True
 
 
 

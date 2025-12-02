@@ -64,7 +64,7 @@ def update_job(id: int, job: schema.Job, db: Session = Depends(get_db), current_
 
 
 @router.post("/{id}/apply", status_code=status.HTTP_200_OK, response_model=schema.JobApplicationOut)
-def apply_for_a_job(id: int, payload: schema.JobApplicateCreate, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
+def apply_for_a_job(id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
 
     # Check if the current user is candidate or not
     if not isinstance(current_user, models.Candidate):
@@ -75,16 +75,33 @@ def apply_for_a_job(id: int, payload: schema.JobApplicateCreate, db: Session = D
     if not job_exist:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exist")
     
-    duplicate_entry = db.query(models.CandidateJobApplication).filter(models.CandidateJobApplication.candidate_id == payload.candidate_id, models.CandidateJobApplication.job_id == id).first()
+    duplicate_entry = db.query(models.CandidateJobApplication).filter(models.CandidateJobApplication.candidate_id == current_user.id, models.CandidateJobApplication.job_id == id).first()
     if duplicate_entry:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Candidate has already applied for the job")
     
-    application = models.CandidateJobApplication(job_id=id, candidate_id=payload.candidate_id)
-
+    application = models.CandidateJobApplication(job_id=id, candidate_id=current_user.id)
     db.add(application) 
     db.commit()
     db.refresh(application)
     return application
+
+@router.get("/{id}/applicants", status_code=status.HTTP_200_OK, response_model=List[schema.JobApplicants])
+def get_job_applicants(id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
+    
+    if not isinstance(current_user, models.Employer):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+    
+    # Check whether the job exists or not
+    job_exists = db.query(models.Job).filter(models.Job.id == id).first()
+    if not job_exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exists")
+    
+    applicants = db.query(models.CandidateJobApplication).filter(models.CandidateJobApplication.job_id == id).all()
+    if not applicants:
+        raise HTTPException(status_code=status.HTTP_200_OK, detail='No one has applied for this job so far')
+    return applicants
+
+
 
 
     

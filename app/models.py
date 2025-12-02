@@ -20,7 +20,7 @@ class Candidate(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     name = Column(String, nullable=False)
-    email = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
     designation = Column(String, nullable=False)
     years_of_exp = Column(Integer, nullable=False)
@@ -35,8 +35,8 @@ class Job(Base):
     experience_start = Column(Integer, nullable=False)
     experience_end = Column(Integer, nullable=False)
     job_location = Column(String, nullable=False)
-    salary_lower_range = Column(Integer)
-    salary_upper_range = Column(Integer)
+    salary_lower_range = Column(Integer, nullable=False)
+    salary_upper_range = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     employer_id = Column(Integer, ForeignKey("employers.id", ondelete="CASCADE"), nullable=False)
     employer = relationship("Employer")
@@ -49,5 +49,5 @@ class CandidateJobApplication(Base):
     candidate = relationship("Candidate")
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     job = relationship("Job")
-
+    applied_at = Column(DateTime(timezone=True), server_default=func.now())
     
