@@ -41,7 +41,7 @@ def get_all_jobs(db: Session = Depends(get_db), limit: int=10, skip: int=0, titl
 
     # apply the filter
     if title:
-        jobs = jobs.filter(models.Job.jobTitle.contains(title))
+        jobs = jobs.filter(models.Job.job_title.contains(title))
     jobs = jobs.limit(limit).offset(skip).all()    
     return jobs
 
