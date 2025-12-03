@@ -33,9 +33,9 @@ def get_a_single_job(id: int, db: Session = Depends(get_db), current_user: int =
     job = db.query(models.Job).filter(models.Job.id == id, models.Job.employer_id == current_user.id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'job with id: {id} is not found')
-    return job 
+    return job
 
-@router.get("", status_code=status.HTTP_200_OK, response_model=List[schema.JobOut])
+@router.get("/{title}", status_code=status.HTTP_200_OK, response_model=List[schema.JobOut])
 def get_all_jobs(db: Session = Depends(get_db), limit: int=10, skip: int=0, title: str | None = None):
     jobs = db.query(models.Job)
 

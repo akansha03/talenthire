@@ -24,28 +24,23 @@ def session():
     finally:
         db.close()
 
-# Helper function (NOT a fixture) to create dependency override
+@pytest.fixture
 def override_get_db_factory(session):
-    """Creates a dependency override function for a given session"""
     def override_get_db():
         try:
             yield session
         finally:
-            pass  # Don't close session here, it's managed by the session fixture
+            session.close()
+    #app.dependency_overrides[get_db] = override_get_db
+    #yield TestClient(app)
     return override_get_db
-
-# Base client fixture for tests that don't need authentication
-@pytest.fixture
-def client(session):
-    """Base client fixture - sets up dependency override once"""
-    app.dependency_overrides[get_db] = override_get_db_factory(session)
-    yield TestClient(app)
-    app.dependency_overrides.clear()
 
 # Create an employer
 @pytest.fixture
-def test_create_employer(client):
-    """Creates an employer in the database via API"""
+def test_create_employer(session):
+
+    app.dependency_overrides[get_db] = override_get_db_factory(session)
+    client = TestClient(app)
     employer_data = {"email" : "amazon@outlook.com", "password": "password", "org_name": "Amazon", "actively_hiring": True}
     response = client.post("/employers/", json=employer_data)
     assert response.status_code == 201
@@ -56,9 +51,9 @@ def test_create_employer(client):
 
 # Create a candidate 
 @pytest.fixture
-def test_create_candidate(client):
-    """Creates a candidate in the database via API"""
-
+def test_create_candidate(session):
+    app.dependency_overrides[get_db] = override_get_db_factory(session)
+    client = TestClient(app)
     candidate_data = {"email" : "john@doe.com","password" : "password" ,"name" : "John Doe", "designation" : "Artist", "years_of_exp" : 12}
     response = client.post("/candidates/me", json=candidate_data)
     assert response.status_code == 201
@@ -79,42 +74,24 @@ def employer_token(test_create_employer):
 
 @pytest.fixture
 def authorized_employer(session, employer_token):
-    """Creates a TestClient with employer authentication.
-    
-    Each TestClient instance is independent - they don't share headers.
-    This allows you to use both authorized_employer and authorized_candidate
-    in the same test without conflicts.
-    """
-    # Set up dependency override (all clients in a test share the same session)
     app.dependency_overrides[get_db] = override_get_db_factory(session)
     client = TestClient(app)
     client.headers['Authorization'] = f'Bearer {employer_token}'
-    yield client
-    # Clean up override after this fixture is done
-    app.dependency_overrides.clear()
+    return client
 
 @pytest.fixture
 def authorized_candidate(session, test_create_candidate):
-    """Creates a TestClient with candidate authentication.
-    
-    Each TestClient instance is independent - they don't share headers.
-    This allows you to use both authorized_employer and authorized_candidate
-    in the same test without conflicts.
-    """
     token = create_access_token({
         "user_id" : test_create_candidate['id'], 
         "user_type" : "candidate"
     })
-    # Set up dependency override (all clients in a test share the same session)
     app.dependency_overrides[get_db] = override_get_db_factory(session)
     client = TestClient(app) 
     client.headers["Authorization"] = f"Bearer {token}"
-    yield client
-    # Clean up override after this fixture is done
-    app.dependency_overrides.clear()
+    return client
 
 @pytest.fixture
-def test_create_jobs(test_create_employer, session):
+def test_create_jobs(test_create_employer, session, authorized_employer):
 
     jobs_data = [
         {
