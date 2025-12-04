@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schema
-from typing import List, Optional
+from typing import List, Optional, Literal
 from .. import oauth2
 
 router = APIRouter(prefix="/jobs", tags=['Jobs'])
@@ -35,13 +35,47 @@ def get_a_single_job(id: int, db: Session = Depends(get_db), current_user: int =
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'job with id: {id} is not found')
     return job
 
-@router.get("/{title}", status_code=status.HTTP_200_OK, response_model=List[schema.JobOut])
-def get_all_jobs(db: Session = Depends(get_db), limit: int=10, skip: int=0, title: str | None = None):
-    jobs = db.query(models.Job)
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[schema.JobOut])
+def get_all_jobs(
+        search: Optional[str] = Query(None, description='Search by title or description'),
+        location: Optional[str] = None,
+        salary_min: Optional[int] = None,
+        salary_max: Optional[int] = None,
+        experience_min: Optional[int] = None,
+        experience_max: Optional[int] = None,
+        order_by: Optional[str] = Query("created_at", description = "Sort Field"),
+        order: Optional[str] = Query("desc", description = "Ascending or Descending"),
+        db: Session = Depends(get_db), 
+        limit: int=10, 
+        skip: int=0
+    ):
 
-    # apply the filter
-    if title:
-        jobs = jobs.filter(models.Job.job_title.contains(title))
+    jobs = db.query(models.Job)
+    if search:
+        pattern = f"%{search}%"
+        jobs = jobs.filter(models.Job.job_title.ilike(pattern) | models.Job.job_description.ilike(pattern))
+
+    if location:
+        jobs = jobs.filter(models.Job.job_location.ilike(f"%{location}%"))    
+
+    if salary_min:
+        jobs = jobs.filter(models.Job.salary_lower_range >= salary_min)
+    if salary_max:
+        jobs = jobs.filter(models.Job.salary_upper_range < salary_max)
+
+    if experience_min: 
+        jobs = jobs.filter(models.Job.experience_start >= experience_min)
+    if experience_max:
+        jobs = jobs.filter(models.Job.experience_end < experience_max)    
+
+    sort_column = getattr(models.Job, order_by, None)
+    if sort_column is not None:
+        if order == "desc":
+            jobs = jobs.order_by(sort_column.desc())
+        else:
+            jobs = jobs.order_by(sort_column.asc())              
+
+
     jobs = jobs.limit(limit).offset(skip).all()    
     return jobs
 

@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.sql.sqltypes import DateTime
 from sqlalchemy.sql import func
+from typing import List
 
 
 class Employer(Base):
