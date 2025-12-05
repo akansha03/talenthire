@@ -122,24 +122,23 @@ def test_update_an_invalid_job(authorized_employer):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_apply_for_job(authorized_candidate, authorized_employer):
-
         payload = {
-        "job_title": "JT1",
-        "job_description": "JD1",
-        "experience_start": 2,
-        "experience_end": 10,
-        "job_location": "Mumbai",
-        "salary_lower_range": 12000,
-        "salary_upper_range": 25000,
+                "job_title": "JT1",
+                "job_description": "JD1",
+                "experience_start": 2,
+                "experience_end": 10,
+                "job_location": "Mumbai",
+                "salary_lower_range": 12000,
+                "salary_upper_range": 25000,
         }
         
         # Employer creates job
-        resp = employer_client.post("/jobs", json=payload)
+        resp = authorized_employer.post("/jobs", json=payload)
         assert resp.status_code == status.HTTP_201_CREATED
         new_job = schema.JobOut(**resp.json())
 
         # Candidate applies to that job
-        candidate_resp = candidate_client.post(f"/jobs/{new_job.id}/apply")
+        candidate_resp = authorized_candidate.post(f"/jobs/{new_job.id}/apply")
         assert candidate_resp.status_code == status.HTTP_200_OK
 
 def test_apply_for_an_invalid_job(authorized_candidate):
