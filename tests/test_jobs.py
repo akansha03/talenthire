@@ -158,5 +158,58 @@ def test_get_job_applicants(authorized_employer, apply_for_job):
         response = authorized_employer.get(f"/jobs/{job_id}/applicants")
         assert response.status_code == status.HTTP_200_OK
 
+def test_filter_job_by_title(client, test_create_jobs):
+        title = test_create_jobs[0].job_title
+        response = client.get(f"/jobs?search={title}")
+        jobs = response.json()
+        expectedTitle = jobs[0]['job_title']
+        assert expectedTitle == title
 
-        
+def test_filter_job_by_description(client, test_create_jobs):
+        description = test_create_jobs[0].job_description
+        response = client.get(f"/jobs?search={description}")
+        jobs = response.json()
+        assert jobs[0]['job_description'] == description       
+
+def test_filter_job_by_location(client, test_create_jobs):
+        location = test_create_jobs[0].job_location
+        response = client.get(f"/jobs?location={location}")
+        jobs = response.json()
+        assert jobs[0]['job_location'] == location
+
+def test_filter_job_by_experience_lower_range(client, test_create_jobs):
+        experience_min = 1
+        response = client.get(f"/jobs?experience_min={experience_min}")
+        jobs = response.json()
+        assert jobs[0]['experience_start'] >= experience_min
+        assert jobs[1]['experience_start'] >= experience_min 
+
+def test_filter_job_by_experience_upper_range(client, test_create_jobs):
+        experience_max = 10
+        response = client.get(f"/jobs?experience_max={experience_max}")
+        jobs = response.json()
+        assert jobs[0]['experience_end'] < experience_max
+        assert jobs[1]['experience_end'] < experience_max 
+
+def test_filter_job_by_salary_lower_range(client, test_create_jobs):
+        salary_min = 10000
+        response = client.get(f"/jobs?salary_min={salary_min}")
+        jobs = response.json()
+        assert jobs[0]['salary_lower_range'] >= salary_min
+        assert jobs[1]['salary_lower_range'] >= salary_min 
+
+def test_filter_job_by_salary_upper_range(client, test_create_jobs):
+        salary_max = 40000
+        response = client.get(f"/jobs?salary_max={salary_max}")
+        jobs = response.json()
+        assert jobs[0]['salary_upper_range'] < salary_max
+        assert jobs[1]['salary_upper_range'] < salary_max 
+
+def test_multiple_filters_jobs_no_result(client, test_create_jobs):
+        response = client.get("/jobs?search=Engineer&location=India")
+        assert len(response.json()) == 0
+
+def test_multiple_filters_jobs(client, test_create_jobs):
+        response = client.get("/jobs?search=Engineer&location=Bengaluru&experience_min=1&experience_max=6&salary_max=35000")
+        job = response.json()
+        assert job[0]['job_location'] == 'Bengaluru'
