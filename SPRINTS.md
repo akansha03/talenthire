@@ -90,20 +90,20 @@ interviews
 
 -   Employer: View all applicants for their jobs
     -   `GET /jobs/{id}/applicants`
--   Application status field (applied/reviewing/accepted/rejected)\
--   Update application status (employer only)\
+-   Application status field (applied/reviewing/accepted/rejected)
+-   Update application status (employer only)
 -   Candidate: See application status in `/my-applications`
 
 ### **Day 8: Additional Features**
 
--   Job view count (increment on `GET /jobs/{id}`)\
--   Popular jobs endpoint (most viewed/applied)\
+-   Job view count (increment on `GET /jobs/{id}`)
+-   Popular jobs endpoint (most viewed/applied)
 -   Active jobs filter (hide expired/filled positions)
 
 ### **Tests:**
 
--   Test applicant viewing (authorization)\
--   Test status updates\
+-   Test applicant viewing (authorization)
+-   Test status updates
 -   Test view tracking
 
 **Checkpoint 3 Deliverable:** Complete application workflow

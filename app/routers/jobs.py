@@ -135,6 +135,39 @@ def get_job_applicants(id: int, db: Session = Depends(get_db), current_user: int
         raise HTTPException(status_code=status.HTTP_200_OK, detail='No one has applied for this job so far')
     return applicants
 
+@router.patch("/{id}/candidate/{candidate_id}", status_code=status.HTTP_200_OK, response_model=schema.ApplicationStatus)
+def update_application_status(
+    id: int,
+    candidate_id: int,
+    applicationStatus: schema.ApplicationStatus,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(oauth2.get_current_user),
+):
+
+    if not isinstance(current_user, models.Employer):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
+
+    job_exists = db.query(models.Job).filter(models.Job.id == id).first()
+    if not job_exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exist")   
+
+    candidate_exists = db.query(models.Candidate).filter(models.Candidate.id == candidate_id).first()
+    if not candidate_exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate doesn't exist")
+
+    job_applied =  (db.query(models.CandidateJobApplication)
+        .filter(
+            models.CandidateJobApplication.job_id == id, models.CandidateJobApplication.candidate_id == candidate_id))
+            
+    existing = job_applied.first()
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No one has applied for this job")
+    job_applied.update(applicationStatus.dict(), synchronize_session=False)
+    db.commit()
+    db.refresh(existing)
+    return existing
+
+
 
 
 

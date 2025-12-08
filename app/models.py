@@ -48,7 +48,8 @@ class CandidateJobApplication(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     candidate_id = Column(Integer, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
     candidate = relationship("Candidate")
-    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     job = relationship("Job")
+    application_status = Column(String, default='In Review')
+    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     applied_at = Column(DateTime(timezone=True), server_default=func.now())
     

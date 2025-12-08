@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import Optional
+from enum import Enum
 
 class Token(BaseModel):
     access_token: str
@@ -76,6 +77,7 @@ class JobApplicationOut(BaseModel):
     id: int
     job_id: int
     candidate: CandidateOut
+    application_status: str
     applied_at: datetime
 
     class Config:
@@ -85,6 +87,7 @@ class JobApplicationWithDetails(BaseModel):
     id: int
     job_id: int
     applied_at: datetime
+    application_status : str
     job: JobOut
 
     class Config:
@@ -94,9 +97,18 @@ class JobApplicants(BaseModel):
     id: int 
     applied_at: datetime
     candidate: CandidateOut
+    application_status: str
 
     class Config:
         from_attributes = True
+
+class ApplicationStatusEnum(str, Enum):
+    reviewing = "reviewing"
+    accepted = "accepted"
+    rejected = "rejected"
+
+class ApplicationStatus(BaseModel):
+    application_status: ApplicationStatusEnum
 
 
 
