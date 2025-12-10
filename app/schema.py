@@ -110,7 +110,8 @@ class ApplicationStatusEnum(str, Enum):
 class ApplicationStatus(BaseModel):
     application_status: ApplicationStatusEnum
 
-
+class ApplicationViews(BaseModel):
+    views : int
 
 
 
