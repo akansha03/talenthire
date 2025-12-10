@@ -1,6 +1,6 @@
 from .database import Base
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, BigInteger
 from sqlalchemy.sql.sqltypes import DateTime
 from sqlalchemy.sql import func
 from typing import List
@@ -36,6 +36,7 @@ class Job(Base):
     experience_start = Column(Integer, nullable=False)
     experience_end = Column(Integer, nullable=False)
     job_location = Column(String, nullable=False)
+    view_count = Column(BigInteger, default=0)
     salary_lower_range = Column(Integer, nullable=False)
     salary_upper_range = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -4,6 +4,7 @@ from ..database import get_db
 from .. import models, schema
 from typing import List, Optional, Literal
 from .. import oauth2
+from sqlalchemy import func, desc
 
 router = APIRouter(prefix="/jobs", tags=['Jobs'])
 
@@ -29,10 +30,12 @@ def create_a_job(job: schema.Job, db: Session = Depends(get_db), current_user: i
     return new_job
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schema.JobOut)
-def get_a_single_job(id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    job = db.query(models.Job).filter(models.Job.id == id, models.Job.employer_id == current_user.id).first()
+def get_a_single_job(id: int, db: Session = Depends(get_db)):
+    job = db.query(models.Job).filter(models.Job.id == id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'job with id: {id} is not found')
+    job.view_count += 1
+    db.commit()    
     return job
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=List[schema.JobOut])
@@ -166,6 +169,41 @@ def update_application_status(
     db.commit()
     db.refresh(existing)
     return existing
+
+@router.get("/{id}/views", status_code=status.HTTP_200_OK)
+def get_count_views_for_jobs(id: int, db: Session = Depends(get_db)):
+    job = db.query(models.Job).filter(models.Job.id == id).first()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job with id: {id} not found")
+    return {"views": job.view_count}
+
+@router.get("/job/most-popular", status_code=status.HTTP_200_OK)
+def get_popular_job(db: Session = Depends(get_db)):
+    result = (
+        db.query(models.CandidateJobApplication.job_id,
+            func.count(models.CandidateJobApplication.id).label("jobs"))
+            .group_by(models.CandidateJobApplication.job_id)
+            .order_by(desc("jobs"))
+            .limit(1)
+            .first()
+    )
+    if not result:
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Jobs found")
+    job = db.query(models.Job).filter(models.Job.id == result.job_id).first()    
+    return {"applied" : result.jobs, "designation": job.job_title}
+
+@router.get("/job/most-viewed", status_code=status.HTTP_200_OK)
+def get_most_viewed_job(db: Session = Depends(get_db)):
+    result = db.query(models.Job).group_by(models.Job.id).order_by(desc(models.Job.view_count)).limit(1).first()
+
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Jobs found")
+
+    return {"views" : result.view_count, "job" : result}    
+
+    
+
+
 
 
 

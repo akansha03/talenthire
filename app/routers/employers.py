@@ -14,7 +14,6 @@ def create_an_employer(employer: schema.EmployerCreate, db: Session = Depends(ge
     duplicate_entry = db.query(models.Employer).filter(models.Employer.email == employer.email).first()
     if duplicate_entry:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Employer already exists")
-    
     '''
     Update in schema to check if the password is empty or not
     
