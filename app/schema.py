@@ -111,7 +111,14 @@ class ApplicationStatus(BaseModel):
     application_status: ApplicationStatusEnum
 
 class ApplicationViews(BaseModel):
-    views : int
+    view_count : int
+
+class JobStatusEnum(str, Enum):
+    active = "active"
+    expired = "expired"
+
+class JobStatus(BaseModel):
+    status: JobStatusEnum
 
 
 
