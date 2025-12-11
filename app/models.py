@@ -31,6 +31,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, nullable=False)
+    status = Column(String, default="active")
     job_title = Column(String, nullable=False)
     job_description = Column(String, nullable=False)
     experience_start = Column(Integer, nullable=False)

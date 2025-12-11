@@ -48,6 +48,7 @@ def get_all_jobs(
         experience_max: Optional[int] = None,
         order_by: Optional[str] = Query("created_at", description = "Sort Field"),
         order: Optional[str] = Query("desc", description = "Ascending or Descending"),
+        job_status: Optional[str] = None,
         db: Session = Depends(get_db), 
         limit: int=10, 
         skip: int=0
@@ -78,6 +79,8 @@ def get_all_jobs(
         else:
             jobs = jobs.order_by(sort_column.asc())              
 
+    if job_status:
+        jobs = jobs.filter(models.Job.status == job_status)
 
     jobs = jobs.limit(limit).offset(skip).all()    
     return jobs
@@ -129,13 +132,13 @@ def get_job_applicants(id: int, db: Session = Depends(get_db), current_user: int
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
     
     # Check whether the job exists or not
-    job_exists = db.query(models.Job).filter(models.Job.id == id).first()
+    job_exists = db.query(models.Job).filter(models.Job.id == id, models.Job.employer_id == current_user.id).first()
     if not job_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exists")
     
     applicants = db.query(models.CandidateJobApplication).filter(models.CandidateJobApplication.job_id == id).all()
     if not applicants:
-        raise HTTPException(status_code=status.HTTP_200_OK, detail='No one has applied for this job so far')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='No one has applied for this job so far')
     return applicants
 
 @router.patch("/{id}/candidate/{candidate_id}", status_code=status.HTTP_200_OK, response_model=schema.ApplicationStatus)
@@ -144,13 +147,13 @@ def update_application_status(
     candidate_id: int,
     applicationStatus: schema.ApplicationStatus,
     db: Session = Depends(get_db),
-    current_user: int = Depends(oauth2.get_current_user),
+    current_user: int = Depends(oauth2.get_current_user)
 ):
 
     if not isinstance(current_user, models.Employer):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to perform this operation")
 
-    job_exists = db.query(models.Job).filter(models.Job.id == id).first()
+    job_exists = db.query(models.Job).filter(models.Job.id == id, models.Job.employer_id == current_user.id).first()
     if not job_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exist")   
 
@@ -170,14 +173,14 @@ def update_application_status(
     db.refresh(existing)
     return existing
 
-@router.get("/{id}/views", status_code=status.HTTP_200_OK)
+@router.get("/{id}/views", status_code=status.HTTP_200_OK, response_model=schema.ApplicationViews)
 def get_count_views_for_jobs(id: int, db: Session = Depends(get_db)):
     job = db.query(models.Job).filter(models.Job.id == id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job with id: {id} not found")
-    return {"views": job.view_count}
+    return job
 
-@router.get("/job/most-popular", status_code=status.HTTP_200_OK)
+@router.get("/job/popular", status_code=status.HTTP_200_OK, response_model=schema.JobOut)
 def get_popular_job(db: Session = Depends(get_db)):
     result = (
         db.query(models.CandidateJobApplication.job_id,
@@ -190,18 +193,33 @@ def get_popular_job(db: Session = Depends(get_db)):
     if not result:
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Jobs found")
     job = db.query(models.Job).filter(models.Job.id == result.job_id).first()    
-    return {"applied" : result.jobs, "designation": job.job_title}
+    return job
 
-@router.get("/job/most-viewed", status_code=status.HTTP_200_OK)
+@router.get("/job/trendy", status_code=status.HTTP_200_OK, response_model=schema.JobOut)
 def get_most_viewed_job(db: Session = Depends(get_db)):
-    result = db.query(models.Job).group_by(models.Job.id).order_by(desc(models.Job.view_count)).limit(1).first()
-
-    if not result:
+    job = db.query(models.Job).group_by(models.Job.id).order_by(desc(models.Job.view_count)).limit(1).first()
+    if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Jobs found")
+    return job
 
-    return {"views" : result.view_count, "job" : result}    
 
-    
+@router.patch("/{id}/status", status_code=status.HTTP_200_OK, response_model=schema.JobStatus)
+def update_job_status(id: int, payload: schema.JobStatus, 
+                    db: Session = Depends(get_db), 
+                    current_user : int = Depends(oauth2.get_current_user)
+    ):
+
+    job = db.query(models.Job).filter(models.Job.id == id)
+    existing = job.first()
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job doesn't exist")
+
+    job.update(payload.dict(), synchronize_session=False)
+    db.commit()
+    db.refresh(existing)
+    return existing
+
+
 
 
 

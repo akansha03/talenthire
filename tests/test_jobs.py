@@ -3,12 +3,13 @@ from app import schema
 from fastapi import status
 
 @pytest.mark.parametrize(
-        "job_title, job_description, experience_start, experience_end, job_location, salary_lower_range, salary_upper_range, status_code", 
-        [('JT1', 'JD1', 2, 10, 'Mumbai', 12000, 25000, status.HTTP_201_CREATED), ('JT2', 'JD2', 1, 5, 'Bengaluru', 20000, 30000, status.HTTP_201_CREATED)])
-def test_create_a_job(authorized_employer, test_create_employer, job_title, job_description, experience_start, experience_end, job_location, salary_lower_range, salary_upper_range, status_code):
+        "job_title, job_description, experience_start, experience_end, job_location, salary_lower_range, salary_upper_range, status_code, view_count, status", 
+        [('JT1', 'JD1', 2, 10, 'Mumbai', 12000, 25000, status.HTTP_201_CREATED, 4, "active"), ('JT2', 'JD2', 1, 5, 'Bengaluru', 20000, 30000, status.HTTP_201_CREATED, 5, "expired")])
+def test_create_a_job(authorized_employer, test_create_employer, job_title, job_description, experience_start, experience_end, job_location, salary_lower_range, salary_upper_range, status_code, view_count, status):
         payload = {"job_title" : job_title, "job_description" : job_description, "experience_start": experience_start,
                 "experience_end" : experience_end, "job_location" : job_location, 
-                "salary_lower_range" : salary_lower_range, "salary_upper_range" : salary_upper_range}
+                "salary_lower_range" : salary_lower_range, "salary_upper_range" : salary_upper_range, 
+                "view_count" : view_count, "status" : status}
         response = authorized_employer.post("/jobs", json = payload) 
         assert response.status_code == status_code
         new_job = schema.JobOut(**response.json())
@@ -63,9 +64,9 @@ def test_get_invalid_format_job(authorized_employer):
         response = authorized_employer.get(f"/jobs/abc")
         assert response.status_code == 422
 
-def test_unauthorized_user_get_a_job(client):
-        response = client.get(f"/jobs/123")
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+def test_non_employer_get_a_job(client):
+        response = client.get("/jobs/123")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_delete_a_job(authorized_employer, test_create_jobs):
         response = authorized_employer.delete(f"/jobs/{test_create_jobs[0].id}")
@@ -213,3 +214,38 @@ def test_multiple_filters_jobs(client, test_create_jobs):
         response = client.get("/jobs?search=Engineer&location=Bengaluru&experience_min=1&experience_max=6&salary_max=35000")
         job = response.json()
         assert job[0]['job_location'] == 'Bengaluru'
+
+def test_get_views_per_job(client, test_create_jobs):
+        response = client.get(f'/jobs/{test_create_jobs[0].id}/views')
+        assert response.status_code == status.HTTP_200_OK
+        job_views = schema.ApplicationViews(**response.json())
+        assert job_views.view_count == test_create_jobs[0].view_count
+
+def test_update_job_status(authorized_employer, test_create_jobs):
+        payload = {"status" : "expired"}
+        response = authorized_employer.patch(f'/jobs/{test_create_jobs[0].id}/status', json=payload)
+        assert response.status_code == status.HTTP_200_OK
+        job_status = schema.JobStatus(**response.json())
+        assert job_status.status == payload['status']
+
+def test_unauthorized_update_job_status(client):
+        response = client.patch(f'/jobs/123/status')
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+def test_update_invalid_job_status(authorized_employer, test_create_jobs):
+        payload = {"status" : "open"}
+        response = authorized_employer.patch(f'/jobs/{test_create_jobs[0].id}/status', json=payload)
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+def test_get_trendy_job(client, test_create_jobs):
+        response = client.get("/jobs/job/trendy")
+        assert response.status_code == status.HTTP_200_OK
+        job = schema.JobOut(**response.json())
+        assert job.job_title == test_create_jobs[1].job_title
+
+def test_get_popular_job(client, apply_for_job):
+        response = client.get("/jobs/job/popular")
+        assert response.status_code == status.HTTP_200_OK
+        job = schema.JobOut(**response.json())
+        assert job.job_location == apply_for_job['job'].job_location
+

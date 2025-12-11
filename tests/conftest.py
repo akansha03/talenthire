@@ -122,7 +122,9 @@ def test_create_jobs(test_create_employer, session):
             "experience_end": 5,
             "job_location": "Mumbai",
             "salary_lower_range": 12000,
-            "salary_upper_range": 25000
+            "salary_upper_range": 25000,
+            "view_count" : 4,
+            "status" : "active"
         },
         {
             "job_title": "Frontend Engineer",
@@ -131,7 +133,9 @@ def test_create_jobs(test_create_employer, session):
             "experience_end": 3,
             "job_location": "Bengaluru",
             "salary_lower_range": 20000,
-            "salary_upper_range": 30000
+            "salary_upper_range": 30000,
+            "view_count" : 5,
+            "status": "expired"
         }
     ]
 
