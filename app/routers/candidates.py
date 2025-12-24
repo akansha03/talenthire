@@ -60,6 +60,7 @@ def update_a_candidate(candidate: schema.CandidateUpdate, db: Session = Depends(
     update_data = candidate.dict(exclude_unset=True)
     update_candidate.update(update_data, synchronize_session=False)
     db.commit()
+    
     db.refresh(existing_candidate)
     return existing_candidate
 

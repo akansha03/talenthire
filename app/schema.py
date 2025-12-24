@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -40,6 +40,18 @@ class Job(BaseModel):
     salary_lower_range: Optional[int] = None
     salary_upper_range: Optional[int] = None 
 
+    @validator('salary_lower_range')
+    def validate_salary(cls, v):
+        if v is not None and v<0:
+            raise ValueError('Salary cannot be negative')
+        return v    
+
+    @validator('salary_upper_range')
+    def validate_salary(cls, v):
+        if v is not None and v<0:
+            raise ValueError('Salary cannot be negative')
+        return v
+        
 class JobOut(Job):
     id : int
     created_at: datetime

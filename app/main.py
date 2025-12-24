@@ -1,13 +1,23 @@
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import Base, engine
 from .routers import jobs, employers, auth, candidates
+import time
 
 
 app = FastAPI()
 
-origins = ["*"]
+origins = ["https://talenthire-b9q0.onrender.com", 
+        "http://localhost:8000"]
+
+logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,4 +41,11 @@ def startup():
 @app.get("/")
 def get_root():
     return {"Hello World ! "}
-    
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "database": "connected"}
+
+@app.on_event("shutdown")
+def shutdown():
+    logger.info("Shutting down.....")    

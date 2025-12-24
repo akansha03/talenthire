@@ -116,14 +116,14 @@ interviews
 
 ### **Day 9: Database Optimization**
 
-Add indexes: - job_title\
+Add indexes: 
+- job_title\
 - job_location\
 - salary_lower_range, salary_upper_range\
 - experience_start, experience_end\
 - employer_id (foreign key index)
-
--   Test query performance (before/after)\
--   Document optimization decisions
+- Test query performance (before/after)\
+- Document optimization decisions
 
 ### **Day 10--11: Redis Caching (Optional)**
 
