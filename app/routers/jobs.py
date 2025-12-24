@@ -27,7 +27,6 @@ def create_a_job(job: schema.Job, db: Session = Depends(get_db), current_user: i
     db.add(new_job)
     db.commit()
     invalidate_cache("jobs:list:*")
-    invalidate_cache("jobs:popular")
     db.refresh(new_job) 
     return new_job
 
@@ -162,6 +161,8 @@ def apply_for_a_job(id: int, db: Session = Depends(get_db), current_user: int = 
     application = models.CandidateJobApplication(job_id=id, candidate_id=current_user.id)
     db.add(application) 
     db.commit()
+    
+    invalidate_cache("jobs:popular")
     db.refresh(application)
     return application
 
